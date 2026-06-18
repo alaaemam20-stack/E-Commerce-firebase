@@ -1,6 +1,7 @@
 import 'package:ecommerce_app_api_26/features/auth/data/auth_api/auth_api.dart';
 import 'package:ecommerce_app_api_26/features/auth/data/models/response/login_response_model.dart';
 import 'package:ecommerce_app_api_26/features/home/presentation/screens/home_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:ecommerce_app_api_26/features/auth/presentation/screens/signup_screen.dart';
 import 'package:ecommerce_app_api_26/features/main_wrapper/presentation/screens/main_wrapper.dart';
@@ -25,6 +26,67 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  void _login()async{
+    if (_formKey.currentState!.validate()) {
+     try{
+       UserCredential userCredential=await FirebaseAuth.instance.signInWithEmailAndPassword(email: _emailController.text, password: _passwordController.text);
+     if(userCredential.user!=null&&FirebaseAuth.instance.currentUser!.emailVerified){//email already varified
+
+
+       ScaffoldMessenger.of(context).showSnackBar(
+         const SnackBar(content: Text("Logged in successfully")),
+       );
+
+       Navigator.pushReplacement(
+           context,
+           MaterialPageRoute(builder: (context) => const MainWrapper()));
+
+
+
+     }else if(!(FirebaseAuth.instance.currentUser!.emailVerified)){
+
+
+       ScaffoldMessenger.of(
+         context,
+       ).showSnackBar(SnackBar(content: Text("please verify your account")));
+
+
+
+     }
+
+
+     else{
+       ScaffoldMessenger.of(
+         context,
+       ).showSnackBar(SnackBar(content: Text("login failed")));
+
+
+     }
+     }on FirebaseAuthException catch (e) {
+       if (e.code == 'weak-password') {
+         ScaffoldMessenger.of(
+           context,
+         ).showSnackBar(SnackBar(content: Text('The password provided is too weak.')));
+
+
+
+       } else if (e.code == 'email-already-in-use') {
+         ScaffoldMessenger.of(
+           context,
+         ).showSnackBar(SnackBar(
+             content: Text('The account already exists for that email.')));
+       }
+
+       }catch(e){
+       ScaffoldMessenger.of(
+         context,
+       ).showSnackBar(SnackBar(content: Text(e.toString())));
+
+
+     }
+    }
+
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -103,37 +165,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         width: double.infinity,
                         height: 50,
                         child: ElevatedButton(
-                          onPressed: () async {
-                            if (_formKey.currentState!.validate()) {
-                              try {
-                                setState(() {
-                                  isLoading = true;
-                                });
-                                await AuthApi().login(
-                                  email: _emailController.text,
-                                  password: _passwordController.text,
-                                );
-
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text("Loggid in")),
-                                );
-
-                                Navigator.of(context).pushReplacement(
-                                  MaterialPageRoute(
-                                    builder: (_) => MainWrapper(),
-                                  ),
-                                );
-                              } catch (error) {
-                                setState(() {
-                                  isLoading = false;
-
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text(error.toString())),
-                                  );
-                                });
-                              }
-                            }
-                          },
+                          onPressed:_login ,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.blue,
                             foregroundColor: Colors.white,
@@ -151,14 +183,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 16),
                       TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const SignupScreen(),
-                            ),
-                          );
+                        onPressed:(){
+                          Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_)=>SignupScreen()));
                         },
+
+
                         child: const Text(
                           'Don\'t have an account? Sign Up',
                           style: TextStyle(color: Colors.blue),

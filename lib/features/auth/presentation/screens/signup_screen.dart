@@ -1,8 +1,6 @@
 import 'package:ecommerce_app_api_26/features/auth/presentation/screens/login_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-
-import '../../data/auth_api/auth_api.dart';
-
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
 
@@ -16,7 +14,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool isLoading = false ;
-
+final auth =FirebaseAuth.instance;
   @override
   void dispose() {
     _nameController.dispose();
@@ -27,16 +25,13 @@ class _SignupScreenState extends State<SignupScreen> {
 
   void _signup() async{
     if (_formKey.currentState!.validate()) {
-      setState(() {
-        isLoading = true;
-      });
-      try {
-        await AuthApi().signup(
-          _nameController.text,
-          _emailController.text,
-          _passwordController.text,
-        );
+      UserCredential userCredential = await auth
+          .createUserWithEmailAndPassword(
+          email: _emailController.text, password: _passwordController.text);
+      if (userCredential.user != null) {
 
+
+        auth.currentUser!.sendEmailVerification();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Account Created Successfully")),
         );
@@ -45,16 +40,17 @@ class _SignupScreenState extends State<SignupScreen> {
           context,
           MaterialPageRoute(builder: (context) => const LoginScreen()),
         );
-      } catch (e) {
-        setState(() {
-          isLoading = false;
-        });
+      } else {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(e.toString())));
+        ).showSnackBar(SnackBar(content: Text("signup failed")));
       }
-    }
-  }
+    }}
+
+
+
+
+
 
   @override
   Widget build(BuildContext context) {
