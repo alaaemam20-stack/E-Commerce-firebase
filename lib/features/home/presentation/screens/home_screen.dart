@@ -1,8 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:ecommerce_app_api_26/features/home/presentation/widgets/product_card.dart';
-
-class HomeScreen extends StatelessWidget {
+import 'package:cloud_firestore/cloud_firestore.dart';
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+   late CollectionReference<Map<String, dynamic>> productReference;
+
+  @override
+  void initState() {
+    super.initState();
+    product();
+  }
+ void product(){
+
+    productReference= FirebaseFirestore.instance.collection("products");
+
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -16,8 +35,62 @@ class HomeScreen extends StatelessWidget {
         'image': 'https://via.placeholder.com/150',
       },
     );
-
+    TextEditingController _nameController = TextEditingController(),
+        _descriptionController = TextEditingController(),
+        _priceController = TextEditingController(),
+        _imageUrlController = TextEditingController();
     return Scaffold(
+        floatingActionButton: FloatingActionButton(
+          child: Icon(Icons.add),
+          onPressed: () {
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  spacing: 10,
+                  children: [
+                    TextField(
+                      controller: _nameController,
+                      decoration: InputDecoration(labelText: 'Name'),
+                    ),
+                    TextField(
+                      controller: _descriptionController,
+                      decoration: InputDecoration(labelText: 'Description'),
+                    ),
+                    TextField(
+                      controller: _priceController,
+                      decoration: InputDecoration(labelText: 'Price'),
+                    ),
+                    TextField(
+                      controller: _imageUrlController,
+                      decoration: InputDecoration(labelText: 'Image Url'),
+                    ),
+                    ElevatedButton(onPressed: () async{
+                      // add
+                     await productReference.add({
+
+                        'name':_nameController.text,
+                        'description':_descriptionController.text,
+                        'price':double.parse(_priceController.text),
+                        'image':_imageUrlController.text
+                      }
+
+                      );
+                     //update 
+                     //  await productReference.doc("product_4").update({
+                     //    'name':'product_5'
+                     //
+                     //
+                     //  });
+
+                    }, child: Text("Add Product")),
+                  ],
+                ),
+              ),
+            );
+          },
+        ) ,
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -77,25 +150,34 @@ class HomeScreen extends StatelessWidget {
             // Products Grid
             Padding(
               padding: const EdgeInsets.all(16.0),
-              child: GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 0.7,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                ),
-                itemCount: dummyProducts.length,
-                itemBuilder: (context, index) {
-                  final product = dummyProducts[index];
-                  return ProductCard(
-                    title: product['title'],
-                    price: product['price'],
-                    description: product['description'],
-                    image: product['image'],
+              child: FutureBuilder(
+                future: productReference.get(),
+                builder: (context, asyncSnap) {
+                  if(!asyncSnap.hasData){
+                    return CircularProgressIndicator();
+                  }
+
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.7,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                    ),
+                    itemCount: asyncSnap.data!.docs.length,
+                    itemBuilder: (context, index) {
+                      final product = asyncSnap.data!.docs[index].data();
+                      return ProductCard(
+                        title: product['name'],
+                        price: product['price'],
+                        description: product['description'],
+                        image: product['image'],
+                      );
+                    },
                   );
-                },
+                }
               ),
             ),
             const SizedBox(height: 20),
