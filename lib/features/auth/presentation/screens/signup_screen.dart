@@ -35,7 +35,14 @@ final auth =FirebaseAuth.instance;
         print("signup went wrong");
           return;
       }
-      FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({'email':_emailController});
+      FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
+
+        'email': _emailController.text,
+        ///////////fdg
+        'name': _nameController.text,
+        'favorites': [],
+        'cart': [],
+       });
 
 
 

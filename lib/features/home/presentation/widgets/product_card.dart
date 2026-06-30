@@ -95,11 +95,11 @@ class _ProductCardState extends State<ProductCard> {
                           ),
                           onPressed: ()
                             {
-                          //   toggelFavorite(context);
-                          //   setState(() {
-                          //     isFavorite!=isFavorite;
-                          //   });
-                          //
+                            toggelFavorite(context);
+                            setState(() {
+                              isFavorite = !isFavorite; ////
+                            });
+
                           },
 
                           icon:Icon(isFavorite?Icons.favorite:

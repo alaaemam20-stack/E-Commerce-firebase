@@ -11,13 +11,15 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
    late CollectionReference<Map<String, dynamic>> productReference;
-   late List favorites;
+   List favorites = [];
 bool loading=true;
 
   @override
   void initState() {
     super.initState();
     product();
+
+    getFavorite();
   }
  void product(){
 
@@ -36,7 +38,27 @@ bool loading=true;
 //
 //
 //   }
-//
+  void getFavorite() async {
+    try {
+      String userId = FirebaseAuth.instance.currentUser!.uid;
+
+      DocumentSnapshot snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+
+      favorites = snapshot.get('favorites');
+
+      print(favorites);
+
+    } catch (e) {
+      print(e);
+    }
+
+    setState(() {
+      loading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -168,7 +190,7 @@ bool loading=true;
               child: FutureBuilder(
                 future: productReference.get(),
                 builder: (context, asyncSnap) {
-                  if(!asyncSnap.hasData||loading){
+                  if(!asyncSnap.hasData){
                     return CircularProgressIndicator();
                   }
 
