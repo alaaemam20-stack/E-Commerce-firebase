@@ -1,18 +1,53 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ecommerce_app_api_26/features/auth/presentation/screens/login_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-class ProductCard extends StatelessWidget {
+class ProductCard extends StatefulWidget {
+  final String id;
+
   final String title;
   final double price;
   final String description;
   final String? image;
+  final bool isFavorite;
 
   const ProductCard({
     super.key,
+    required this.id,
     required this.title,
     required this.price,
     required this.description,
     this.image,
+   required this.isFavorite,
   });
+
+  @override
+  State<ProductCard> createState() => _ProductCardState();
+}
+
+class _ProductCardState extends State<ProductCard> {
+ late bool isFavorite=widget.isFavorite;
+
+  void toggelFavorite(BuildContext context)async{
+    if(FirebaseAuth.instance.currentUser==null){
+      Navigator.push(context, MaterialPageRoute(builder: (context)=>LoginScreen()));
+    }
+    String userId =FirebaseAuth.instance.currentUser!.uid;
+    DocumentSnapshot snapshot=await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    List<dynamic>favorites=(snapshot.data()as Map)['favorites'];
+   // List<dynamic>favorites=(snapshot.data()as Map)['favorites'].add(id); return map +void  ===>error
+    // List<dynamic>favorites=(snapshot.data()as Map)['favorites']..add(id);return map after that add
+    if(favorites.contains(widget.id)){
+      favorites.remove(widget.id);
+    }else{
+      favorites.add(widget.id);
+    }
+
+    FirebaseFirestore.instance.collection('users').doc(userId).update({
+      'favorites':favorites,
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,17 +79,31 @@ class ProductCard extends StatelessWidget {
               ),
               child: Stack(
                 children: [
-                   Center(child:image==null?Icon(Icons.shopping_bag_outlined, size: 40, color: Colors.blue):Image.network(image!),),
+                   Center(child:widget.image==null?Icon(Icons.shopping_bag_outlined, size: 40, color: Colors.blue):Image.network(widget.image!),),
                   PositionBag(
                     top: 10,
                     right: 10,
                     child: Container(
-                      padding: const EdgeInsets.all(6),
+                     // padding: const EdgeInsets.all(6),
                       decoration: const BoxDecoration(
                         color: Colors.white,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.favorite_border, size: 18, color: Colors.red),
+                      child: IconButton(
+                          style: IconButton.styleFrom(
+                            padding: EdgeInsets.zero
+                          ),
+                          onPressed: ()
+                            {
+                          //   toggelFavorite(context);
+                          //   setState(() {
+                          //     isFavorite!=isFavorite;
+                          //   });
+                          //
+                          },
+
+                          icon:Icon(isFavorite?Icons.favorite:
+                          Icons.favorite_border, size: 18, color: Colors.red)),
                     ),
                   ),
                 ],
@@ -67,14 +116,14 @@ class ProductCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  widget.title,
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  description,
+                  widget.description,
                   style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -84,7 +133,7 @@ class ProductCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      '\$$price',
+                      '\$${widget.price}',
                       style: const TextStyle(
                         color: Colors.blue,
                         fontWeight: FontWeight.bold,

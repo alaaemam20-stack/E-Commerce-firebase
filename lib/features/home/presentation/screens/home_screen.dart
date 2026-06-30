@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:ecommerce_app_api_26/features/home/presentation/widgets/product_card.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -10,6 +11,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
    late CollectionReference<Map<String, dynamic>> productReference;
+   late List favorites;
+bool loading=true;
 
   @override
   void initState() {
@@ -21,7 +24,19 @@ class _HomeScreenState extends State<HomeScreen> {
     productReference= FirebaseFirestore.instance.collection("products");
 
   }
-
+//   void getFavorite()async{
+//     String userId =FirebaseAuth.instance.currentUser!.uid;
+//     favorites=await FirebaseFirestore.instance.collection('users').doc(userId).get().then((snapshot){
+//      return snapshot.get('favorites') as List;
+//     });
+// setState(() {
+//   loading=false;
+//
+// });
+//
+//
+//   }
+//
 
   @override
   Widget build(BuildContext context) {
@@ -153,7 +168,7 @@ class _HomeScreenState extends State<HomeScreen> {
               child: FutureBuilder(
                 future: productReference.get(),
                 builder: (context, asyncSnap) {
-                  if(!asyncSnap.hasData){
+                  if(!asyncSnap.hasData||loading){
                     return CircularProgressIndicator();
                   }
 
@@ -170,10 +185,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     itemBuilder: (context, index) {
                       final product = asyncSnap.data!.docs[index].data();
                       return ProductCard(
+                        // bring id
+                        id:asyncSnap.data!.docs[index].id,
                         title: product['name'],
                         price: product['price'],
                         description: product['description'],
                         image: product['image'],
+                        isFavorite: favorites.contains(asyncSnap.data!.docs[index].id),
+
                       );
                     },
                   );

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:ecommerce_app_api_26/features/auth/presentation/screens/login_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -28,6 +29,17 @@ final auth =FirebaseAuth.instance;
       UserCredential userCredential = await auth
           .createUserWithEmailAndPassword(
           email: _emailController.text, password: _passwordController.text);
+
+     // FirebaseAuth.instance.currentUser!.uid;
+      if (userCredential== null||userCredential.user==null){
+        print("signup went wrong");
+          return;
+      }
+      FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({'email':_emailController});
+
+
+
+
       if (userCredential.user != null) {
 
 
