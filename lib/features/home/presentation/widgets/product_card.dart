@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 class ProductCard extends StatefulWidget {
   final String id;
 
+
   final String title;
   final double price;
   final String description;
