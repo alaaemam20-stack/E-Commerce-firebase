@@ -49,6 +49,77 @@ class _ProductCardState extends State<ProductCard> {
       'favorites':favorites,
     });
   }
+ void addToCart(BuildContext context) async {
+
+   if(FirebaseAuth.instance.currentUser==null){
+     Navigator.push(
+       context,
+       MaterialPageRoute(builder: (_)=>LoginScreen()),
+     );
+     return;
+   }
+
+   String userId=FirebaseAuth.instance.currentUser!.uid;
+
+   DocumentSnapshot snapshot=await FirebaseFirestore.instance
+       .collection("users")
+       .doc(userId)
+       .get();
+
+   List cart=(snapshot.data() as Map)["cart"];
+
+   bool found=false;
+
+   for(var item in cart){
+
+     if(item["productId"]==widget.id){
+
+       item["quantity"]++;
+
+       found=true;
+
+       break;
+     }
+   }
+
+   if(!found){
+
+     cart.add({
+       "productId": widget.id,
+       "name": widget.title,
+       "price": widget.price,
+       "image": widget.image,
+       "quantity": 1,
+     });
+   }
+
+   await FirebaseFirestore.instance
+       .collection("users")
+       .doc(userId)
+       .update({
+
+     "cart":cart,
+
+   });
+   setState(() {});
+
+   // SnackBar
+   ScaffoldMessenger.of(context).hideCurrentSnackBar();
+
+   ScaffoldMessenger.of(context).showSnackBar(
+     SnackBar(
+       content: Text(
+         found
+             ? "Already in cart, quantity updated"
+             : "Added to cart successfully",
+       ),
+       duration: const Duration(seconds: 2),
+       behavior: SnackBarBehavior.floating,
+
+     ),
+   );
+
+ }
 
   @override
   Widget build(BuildContext context) {
@@ -141,13 +212,18 @@ class _ProductCardState extends State<ProductCard> {
                         fontSize: 18,
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: Colors.blue,
-                        borderRadius: BorderRadius.circular(8),
+                    GestureDetector(
+                      onTap: (){addToCart(context);
+
+                        },
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.blue,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.add, color: Colors.white, size: 20),
                       ),
-                      child: const Icon(Icons.add, color: Colors.white, size: 20),
                     ),
                   ],
                 ),

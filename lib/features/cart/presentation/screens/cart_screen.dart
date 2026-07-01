@@ -1,15 +1,76 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-class CartScreen extends StatelessWidget {
+class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final List<Map<String, dynamic>> cartItems = List.generate(3, (index) => {
-      'title': 'Premium Product ${index + 1}',
-      'price': (index + 1) * 35.0,
-      'quantity': 1,
+  State<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends State<CartScreen> {
+  late List cart=[];
+  bool isLoading=true;
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    getCart();
+  }
+  Future<void> getCart() async{
+    print(FirebaseAuth.instance.currentUser);
+    String userId=FirebaseAuth.instance.currentUser!.uid;
+
+    DocumentSnapshot snapshot=
+    await FirebaseFirestore.instance
+        .collection("users")
+        .doc(userId)
+        .get();
+
+    cart=snapshot.get("cart");
+    print(cart);
+
+    setState(() {
+      isLoading=false;
     });
+
+  }
+  Future<void> updateCart() async {
+    String userId = FirebaseAuth.instance.currentUser!.uid;
+
+    await FirebaseFirestore.instance
+        .collection("users")
+        .doc(userId)
+        .update({
+      "cart": cart,
+    });
+
+    setState(() {});
+  }
+  double getTotal() {
+    double total = 0;
+
+    for (var item in cart) {
+      if (item["price"] == null || item["quantity"] == null) {
+        print("Invalid item: $item");
+        continue;
+      }
+
+      total += (item["price"] as num).toDouble() *
+          (item["quantity"] as num).toDouble();
+    }
+
+    return total;
+  }
+  @override
+  Widget build(BuildContext context) {
+    if(isLoading){   return const Scaffold(
+      body: Center(
+        child: CircularProgressIndicator(),
+      ),
+    );}
+
 
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
@@ -24,9 +85,9 @@ class CartScreen extends StatelessWidget {
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: cartItems.length,
+              itemCount: cart.length,
               itemBuilder: (context, index) {
-                final item = cartItems[index];
+                final item = cart[index];
                 return Container(
                   margin: const EdgeInsets.only(bottom: 16),
                   padding: const EdgeInsets.all(12),
@@ -43,14 +104,22 @@ class CartScreen extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(Icons.shopping_bag_outlined, color: Colors.blue, size: 30),
+                      // Container(
+                      //   width: 80,
+                      //   height: 80,
+                      //   decoration: BoxDecoration(
+                      //     color: Colors.blue.shade50,
+                      //     borderRadius: BorderRadius.circular(12),
+                      //   ),
+                      //   child: const Icon(Icons.shopping_bag_outlined, color: Colors.blue, size: 30),
+                      // ),
+                      item["image"] == null || item["image"] == ""
+                          ? const Icon(Icons.shopping_bag, size: 70)
+                          : Image.network(
+                        item["image"],
+                        width: 70,
+                        height: 70,
+                        fit: BoxFit.cover,
                       ),
                       const SizedBox(width: 16),
                       Expanded(
@@ -58,7 +127,7 @@ class CartScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              item['title'],
+                              item['name'],
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                             ),
                             const SizedBox(height: 4),
@@ -71,12 +140,24 @@ class CartScreen extends StatelessWidget {
                       ),
                       Row(
                         children: [
-                          _buildQtyBtn(Icons.remove, () {}),
+                          _buildQtyBtn(Icons.remove,  () async {
+                            if (item["quantity"] > 1) {
+                              item["quantity"]--;
+                            } else {
+                              cart.removeAt(index);
+                            }
+
+                            await updateCart();
+                          },),
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 8),
                             child: Text('${item['quantity']}', style: const TextStyle(fontWeight: FontWeight.bold)),
                           ),
-                          _buildQtyBtn(Icons.add, () {}),
+                          _buildQtyBtn(Icons.add,  () async {
+                            item["quantity"]++;
+
+                            await updateCart();
+                          },),
                         ],
                       ),
                     ],
@@ -104,7 +185,7 @@ class CartScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Total Amount', style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
-                    const Text('\$210.0', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.blue)),
+                    Text( "\$${getTotal()}", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.blue)),
                   ],
                 ),
                 const SizedBox(height: 20),
